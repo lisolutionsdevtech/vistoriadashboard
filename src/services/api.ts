@@ -3,6 +3,7 @@ import {
   LeilaoResumo,
   LeilaoRelatorioResumo,
   LotesResponse,
+  LoteResumo,
 } from "@/types/leilao";
 import { obterToken } from "./auth";
 
@@ -27,7 +28,7 @@ export async function buscarLeiloesAbertos(): Promise<LeilaoResponse> {
       "debug.log",
       `[${new Date().toISOString()}] [API] Fetching: ${fullUrl}\n`,
     );
-  } catch (e) { }
+  } catch (e) {}
 
   const res = await fetch(fullUrl, {
     headers: {
@@ -52,7 +53,7 @@ export async function buscarLeiloesAbertos(): Promise<LeilaoResponse> {
         "debug.log",
         `[${new Date().toISOString()}] [API] Error Body: ${text}\n`,
       );
-    } catch (e) { }
+    } catch (e) {}
     throw new Error(
       `Erro ao buscar leilões: ${res.status} - ${text.substring(0, 100)}`,
     );
@@ -133,8 +134,11 @@ export async function buscarLeiloesFinalizados(): Promise<LeilaoResponse> {
 
   return res.json();
 }
-export async function buscarLotesPorLeilao(id: number): Promise<LotesResponse> {
-  const token = await obterToken();
+export async function buscarLotesPorLeilao(
+  id: number,
+  token?: string,
+): Promise<LotesResponse> {
+  const authToken = token || (await obterToken());
   const limit = 200;
   let page = 1;
   let allLots: any[] = [];
@@ -155,7 +159,7 @@ export async function buscarLotesPorLeilao(id: number): Promise<LotesResponse> {
       {
         headers: {
           Accept: "application/json",
-          Authorization: token,
+          Authorization: authToken,
           Origin: "https://erp.leiloespb.com.br",
           Referer: "https://erp.leiloespb.com.br/",
         },
@@ -184,4 +188,26 @@ export async function buscarLotesPorLeilao(id: number): Promise<LotesResponse> {
     total: allLots.length,
     stats: stats,
   };
+}
+
+export async function buscarLotePorId(
+  id: number,
+  token?: string,
+): Promise<LoteResumo> {
+  const authToken = token || (await obterToken());
+  const res = await fetch(`${BASE_URL}/api/lotes/${id}`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: authToken,
+      Origin: "https://erp.leiloespb.com.br",
+      Referer: "https://erp.leiloespb.com.br/",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erro ao buscar detalhe do lote ${id}: ${res.status}`);
+  }
+
+  return res.json();
 }

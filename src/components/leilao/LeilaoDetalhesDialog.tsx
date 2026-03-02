@@ -1,5 +1,8 @@
 "use client";
 
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
+
 import {
   Dialog,
   DialogContent,
@@ -21,6 +24,7 @@ import {
   LeilaoRelatorioResumo,
   LoteResumo,
   LotesResponse,
+  Arquivo,
 } from "@/types/leilao";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +42,8 @@ import {
   Circle,
   Square,
   CheckSquare,
+  Car,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -63,10 +69,20 @@ export function LeilaoDetalhesDialog({
     data: leilao,
     error,
     isLoading,
+    mutate,
   } = useSWR<LeilaoResumo>(id ? `/api/leiloes/${id}` : null, fetcher, {
     fallbackData: initialData,
     revalidateOnFocus: false,
+    revalidateOnMount: true,
   });
+
+  useEffect(() => {
+    if (open && id) {
+      // Passar undefined limpa os dados atuais no cache e força um novo fetch,
+      // garantindo que o usuário veja o estado de loading e dados frescos toda vez
+      mutate(undefined, { revalidate: true });
+    }
+  }, [open, id, mutate]);
 
   if (!id) return null;
 
@@ -80,6 +96,7 @@ export function LeilaoDetalhesDialog({
             error={error}
             TitleComponent={DialogTitle}
             HeaderComponent={DialogHeader}
+            open={open}
           />
         </DialogContent>
       </Dialog>
@@ -88,13 +105,14 @@ export function LeilaoDetalhesDialog({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-svh max-h-svh p-0 overflow-hidden flex flex-col ">
+      <DrawerContent className="h-[90vh] p-0 flex flex-col">
         <LeilaoDetalhesContent
           leilao={leilao}
           isLoading={isLoading}
           error={error}
           TitleComponent={DrawerTitle}
           HeaderComponent={DrawerHeader}
+          open={open}
         />
       </DrawerContent>
     </Drawer>
@@ -107,9 +125,8 @@ interface LeilaoDetalhesContentProps {
   error: any;
   TitleComponent: React.ComponentType<any>;
   HeaderComponent: React.ComponentType<any>;
+  open: boolean;
 }
-
-import { useMemo, useState } from "react";
 
 function LeilaoDetalhesContent({
   leilao,
@@ -117,6 +134,7 @@ function LeilaoDetalhesContent({
   error,
   TitleComponent,
   HeaderComponent,
+  open,
 }: LeilaoDetalhesContentProps) {
   const {
     data: lotesData,
@@ -127,6 +145,7 @@ function LeilaoDetalhesContent({
   } = useSWR<LotesResponse>(
     leilao?.id ? `/api/leiloes/${leilao.id}/lotes` : null,
     fetcher,
+    { revalidateOnMount: true },
   );
 
   const {
@@ -138,7 +157,15 @@ function LeilaoDetalhesContent({
   } = useSWR<LeilaoRelatorioResumo>(
     leilao?.id ? `/api/leiloes/${leilao.id}/resumo` : null,
     fetcher,
+    { revalidateOnMount: true },
   );
+
+  useEffect(() => {
+    if (open && leilao?.id) {
+      mutateLotes(undefined, { revalidate: true });
+      mutateSummary(undefined, { revalidate: true });
+    }
+  }, [open, leilao?.id, mutateLotes, mutateSummary]);
 
   const calculatedStats = useMemo(() => {
     if (!lotesData?.result) return null;
@@ -241,7 +268,7 @@ function LeilaoDetalhesContent({
       </HeaderComponent>
 
       <div className="flex-grow overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center gap-2 px-5 py-2">
+        <div className="flex justify-between items-center gap-2 px-6">
           {lotesData?.result?.some((l) => l.status === 2) &&
             leilao?.status === 4 && (
               <Badge variant="destructive">
@@ -290,10 +317,10 @@ function LeilaoDetalhesContent({
           </div>
         ) : leilao ? (
           <Tabs
-            defaultValue="geral"
+            defaultValue="lotes"
             className="flex-grow flex flex-col overflow-hidden"
           >
-            <div className="px-6 pt-6 shrink-0">
+            <div className="px-6 pt-2 shrink-0">
               <TabsList className="mb-4 w-full grid grid-cols-2">
                 <TabsTrigger value="lotes">Lotes</TabsTrigger>
                 <TabsTrigger value="resumo">Resumo</TabsTrigger>
@@ -313,11 +340,11 @@ function LeilaoDetalhesContent({
                       </h4>
                       <ul className="text-sm space-y-1">
                         <li>Lotes: {leilao.totalLotes ?? "-"}</li>
-                        <li>Habilitados: {leilao.habilitados ?? "-"}</li>
+                        {/* <li>Habilitados: {leilao.habilitados ?? "-"}</li>
                         <li>Visitas: {leilao.statsVisitas ?? "-"}</li>
                         <li>
                           Venda Direta: {leilao.vendaDireta ? "Sim" : "Não"}
-                        </li>
+                        </li> */}
                       </ul>
                     </div>
                     <div className="p-4 bg-muted/50 rounded-lg space-y-2">
@@ -325,16 +352,15 @@ function LeilaoDetalhesContent({
                         <Scale className="h-4 w-4" /> Informações
                       </h4>
                       <ul className="text-sm space-y-1">
-                        <li>Lances: {leilao.stats?.lances ?? 0}</li>
+                        {/* <li>Lances: {leilao.stats?.lances ?? 0}</li> */}
                         {calculatedStats && (
                           <>
-                            <li>Lotes com lance: {calculatedStats.comLance}</li>
+                            {/* <li>Lotes com lance: {calculatedStats.comLance}</li> */}
                             <li>
                               Lotes sem foto:{" "}
                               {
                                 calculatedStats.lotesRaw.filter(
                                   (lote: LoteResumo) =>
-                                    !lote.image?.thumb?.url &&
                                     !lote.bem?.image?.thumb?.url,
                                 ).length
                               }
@@ -363,11 +389,204 @@ function LeilaoDetalhesContent({
                 />
               </ScrollArea>
             </TabsContent>
-
           </Tabs>
         ) : null}
       </div>
     </>
+  );
+}
+
+interface LoteDetalheItemProps {
+  lote: LoteResumo;
+  formatBRL: (val: number | string) => string;
+}
+
+function LoteDetalheItem({ lote, formatBRL }: LoteDetalheItemProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isVisible = useIntersectionObserver(containerRef, {
+    rootMargin: "0px 0px 400px 0px", // Carregar quando estiver a 400px de entrar na tela
+  });
+
+  const { data: detalhe, isLoading } = useSWR<LoteResumo>(
+    isVisible ? `/api/lotes/${lote.id}` : null,
+    fetcher,
+    { revalidateOnFocus: false, revalidateOnReconnect: false },
+  );
+
+  const item = detalhe || lote;
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative flex gap-4 p-4 border rounded-lg hover:bg-muted transition-colors hover:cursor-pointer overflow-hidden ${lote.status === 10 && "bg-red-100 hover:bg-red-200"}`}
+    >
+      <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-md bg-muted">
+        {item.image?.thumb?.url || item.bem?.image?.thumb?.url ? (
+          <Image
+            src={item.image?.thumb?.url || item.bem?.image?.thumb?.url || ""}
+            alt={item.siteTitulo || item.bem?.siteTitulo || ""}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <FileText className="h-8 w-8 text-muted-foreground" />
+          </div>
+        )}
+        <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+          LOTE {lote.numero}
+        </div>
+      </div>
+      <div className="flex-grow min-w-0 space-y-1">
+        <h4 className="font-bold text-sm line-clamp-2">
+          {item.siteTitulo || item.bem?.siteTitulo}
+        </h4>
+        <div className="flex flex-col gap-2 text-xs text-muted-foreground">
+          {item.bem?.comitente?.pessoa?.name && (
+            <span className="flex items-center gap-1">
+              <User className="h-3 w-3" /> {item.bem.comitente.pessoa.name}
+            </span>
+          )}
+          {item.bem?.placa && (
+            <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1">
+                <Car className="h-3 w-3" /> {item.bem.placa}
+              </span>
+              <Badge
+                variant={"outline"}
+                className="w-fit h-fit py-0 outline-1 text-[10px] border-green-700 text-green-800 bg-green-100"
+              >
+                ERP
+              </Badge>
+            </div>
+          )}
+          {item.bem?.chassi && (
+            <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1">
+                <Info className="h-3 w-3" /> {item.bem.chassi}
+              </span>
+              <Badge
+                variant={"outline"}
+                className="w-fit h-fit py-0 outline-1 text-[10px] border-green-700 text-green-800 bg-green-100"
+              >
+                ERP
+              </Badge>
+            </div>
+          )}
+        </div>
+        <div className="pt-2 flex justify-between items-end">
+          <div className="flex flex-col items-start gap-2">
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase text-muted-foreground font-medium">
+                Lance Atual
+              </p>
+              <p className="font-bold text-primary">
+                {item.valorArremate
+                  ? formatBRL(item.valorArremate)
+                  : item.valorLanceAtual
+                    ? formatBRL(item.valorLanceAtual)
+                    : "Sem Lance"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            {lote.status === 100 && (
+              <Badge
+                variant="secondary"
+                className="bg-green-100 text-green-700 hover:bg-green-100"
+              >
+                Vendido
+              </Badge>
+            )}
+            {lote.status === 2 && (
+              <Badge
+                variant="secondary"
+                className="bg-gray-100 text-violet-700 hover:bg-gray-100"
+              >
+                Em Pregão
+              </Badge>
+            )}
+            {lote.status === 5 && (
+              <Badge
+                variant="secondary"
+                className="bg-blue-100 text-blue-700 hover:bg-blue-100"
+              >
+                Homologando
+              </Badge>
+            )}
+            {lote.status === 7 && (
+              <Badge
+                variant="secondary"
+                className="bg-purple-100 text-purple-700 hover:bg-purple-100"
+              >
+                Condicional
+              </Badge>
+            )}
+            {lote.status === 1 && (
+              <Badge
+                variant="secondary"
+                className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+              >
+                Aberto
+              </Badge>
+            )}
+            {lote.status === 10 && (
+              <Badge
+                variant="secondary"
+                className="bg-red-100 text-red-700 hover:bg-red-100"
+              >
+                Retirado
+              </Badge>
+            )}
+            {lote.status === 8 && (
+              <Badge
+                variant="secondary"
+                className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+              >
+                Sem Licitante
+              </Badge>
+            )}
+
+            {detalhe && item.bem?.arquivos && (
+              <div className="flex flex-wrap gap-1.5 justify-end">
+                {(() => {
+                  const fotoERPCount = item.bem.arquivos.filter(
+                    (a) => a.tipo.nome === "Foto Site",
+                  ).length;
+                  const fotoSiteCount = item.bem.arquivos.filter(
+                    (a) => a.site === true,
+                  ).length;
+
+                  return (
+                    <>
+                      <Badge
+                        variant="outline"
+                        className={`flex items-center gap-1 px-1.5 py-0 text-[10px] ${fotoERPCount === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                      >
+                        {fotoERPCount} Fotos no ERP
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`flex items-center gap-1 px-1.5 py-0 text-[10px] ${fotoSiteCount === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                      >
+                        {fotoSiteCount} Fotos no Site
+                      </Badge>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {isLoading && (
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-100">
+          <div className="h-full bg-blue-600 animate-pulse"></div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -386,21 +605,21 @@ function LotesTabContent({
   mutate: () => void;
   isValidating: boolean;
 }) {
-  if (isLoading) {
+  const [filter, setFilter] = useState<"todos" | "sem_foto">("todos");
+
+  const formatBRL = (val: number | string) => {
+    const num = typeof val === "string" ? parseFloat(val) : val;
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(num || 0);
+  };
+
+  if (isLoading && lotes.length === 0) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className="flex gap-4 p-4 border rounded-lg animate-pulse"
-          >
-            <div className="w-20 h-20 bg-muted rounded" />
-            <div className="flex-grow space-y-2">
-              <div className="h-4 bg-muted rounded w-1/4" />
-              <div className="h-4 bg-muted rounded w-3/4" />
-              <div className="h-4 bg-muted rounded w-1/2" />
-            </div>
-          </div>
+      <div className="flex flex-col gap-2 py-4">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -423,19 +642,9 @@ function LotesTabContent({
     );
   }
 
-  const formatBRL = (val: number | string) => {
-    const num = typeof val === "string" ? parseFloat(val) : val;
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(num || 0);
-  };
-
-  const [lotesSemLance, setLotesSemLance] = useState(false);
-
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3">
+      {/* <div className="grid grid-cols-2 gap-3">
         <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-center">
           <p className="text-[10px] uppercase text-blue-700 font-semibold">
             Com Lance
@@ -468,276 +677,47 @@ function LotesTabContent({
             <span>{stats?.condicionais || 0}</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="flex items-center justify-between border-b pb-2">
         <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-wrap">
           Lista de Lotes |
-          <Badge className="ml-2 font-mono">{stats.total + stats.retirados} Itens</Badge>
+          <Badge className="ml-2 font-mono">{lotes.length} Itens</Badge>
           <Badge
-            onClick={() => setLotesSemLance(!lotesSemLance)}
-            className={`ml-2 border-[1px] font-mono ${lotesSemLance ? "bg-yellow-700 hover:bg-yellow-600 text-yellow-100" : "hover:bg-yellow-200 bg-yellow-100 text-yellow-700"} hover:cursor-pointer`}
+            onClick={() => setFilter(filter === "todos" ? "sem_foto" : "todos")}
+            className={`ml-2 border-[1px] font-mono ${filter === "sem_foto" ? "bg-yellow-700 hover:bg-yellow-600 text-yellow-100" : "hover:bg-yellow-200 bg-yellow-100 text-yellow-700"} hover:cursor-pointer`}
           >
-            {stats.semLance} Sem lance
+            Filtrar Sem Foto
           </Badge>
         </span>
       </div>
 
-      <div className="grid gap-4">
-        {lotesSemLance && (
-          <Badge className="w-max">Exibindo apenas lotes sem lance</Badge>
-        )}
-        {lotesSemLance
+      <div className="grid gap-3">
+        {filter === "sem_foto"
           ? lotes
-            .filter((lote) => !lote.lanceAtual)
-            .map((lote) => (
-              <div
-                key={lote.id}
-                className={`flex gap-4 p-4 border rounded-lg hover:bg-muted transition-colors hover:cursor-pointer ${lote.status === 10 && "bg-red-100 hover:bg-red-200"} `}
-              >
-                <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-md bg-muted">
-                  {lote.image?.thumb?.url || lote.bem?.image?.thumb?.url ? (
-                    <Image
-                      src={
-                        lote.image?.thumb?.url ||
-                        lote.bem?.image?.thumb?.url ||
-                        ""
-                      }
-                      alt={lote.siteTitulo || lote.bem?.siteTitulo || ""}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-                    LOTE {lote.numero}
-                  </div>
-                </div>
-                <div className="flex-grow min-w-0 space-y-1">
-                  <h4 className="font-bold text-sm line-clamp-2">
-                    {lote.siteTitulo || lote.bem?.siteTitulo}
-                  </h4>
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    {lote.bem?.comitente?.pessoa?.name && (
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />{" "}
-                        {lote.bem.comitente.pessoa.name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="pt-2 flex justify-between items-end">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                          Lance Atual
-                        </p>
-                        <p className="font-bold text-primary">
-                          {lote.valorLanceAtual
-                            ? formatBRL(lote.valorLanceAtual)
-                            : "Sem Lance"}
-                        </p>
-                      </div>
-                      <div className="space-y-0.5">
-                        {lote.valorAvaliacao !== "0.00" && (
-                          <>
-                            <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                              Avaliação
-                            </p>
-                            <p className="font-bold text-primary">
-                              {formatBRL(lote.valorAvaliacao || "0")}
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {lote.status === 100 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-700 hover:bg-green-100"
-                      >
-                        Vendido
-                      </Badge>
-                    )}
-                    {lote.status === 2 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-100 text-violet-700 hover:bg-gray-100"
-                      >
-                        Em Pregão
-                      </Badge>
-                    )}
-                    {lote.status === 5 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-100 text-blue-700 hover:bg-blue-100"
-                      >
-                        Homologando
-                      </Badge>
-                    )}
-                    {lote.status === 7 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-purple-100 text-purple-700 hover:bg-purple-100"
-                      >
-                        Condicional
-                      </Badge>
-                    )}
-                    {lote.status === 1 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                      >
-                        Aberto
-                      </Badge>
-                    )}
-                    {lote.status === 10 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-red-100 text-red-700 hover:bg-red-100"
-                      >
-                        Retirado
-                      </Badge>
-                    )}
-                    {lote.status === 8 && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                      >
-                        Sem Licitante
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
+              .filter(
+                (lote) =>
+                  !lote.image?.thumb?.url &&
+                  !lote.bem?.image?.thumb?.url &&
+                  (!lote.bem?.arquivos?.filter(
+                    (a) => a.tipo.nome === "Foto Site",
+                  ).length ||
+                    !lote.bem?.arquivos?.filter((a) => a.site === true).length),
+              )
+              .map((lote) => (
+                <LoteDetalheItem
+                  key={lote.id}
+                  lote={lote}
+                  formatBRL={formatBRL}
+                />
+              ))
           : lotes.map((lote) => (
-            <div
-              key={lote.id}
-              className={`flex gap-4 p-4 border rounded-lg hover:bg-muted transition-colors hover:cursor-pointer ${lote.status === 10 && "bg-red-100 hover:bg-red-200"} `}
-            >
-              <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-md bg-muted">
-                {lote.image?.thumb?.url || lote.bem?.image?.thumb?.url ? (
-                  <Image
-                    src={
-                      lote.image?.thumb?.url ||
-                      lote.bem?.image?.thumb?.url ||
-                      ""
-                    }
-                    alt={lote.siteTitulo || lote.bem?.siteTitulo || ""}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-                  LOTE {lote.numero}
-                </div>
-              </div>
-              <div className="flex-grow min-w-0 space-y-1">
-                <h4 className="font-bold text-sm line-clamp-2">
-                  {lote.siteTitulo || lote.bem?.siteTitulo}
-                </h4>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  {lote.bem?.comitente?.pessoa?.name && (
-                    <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />{" "}
-                      {lote.bem.comitente.pessoa.name}
-                    </span>
-                  )}
-                </div>
-                <div className="pt-2 flex justify-between items-end">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                        Lance Atual
-                      </p>
-                      <p className="font-bold text-primary">
-                        {lote.valorLanceAtual
-                          ? formatBRL(lote.valorLanceAtual)
-                          : "Sem Lance"}
-                      </p>
-                    </div>
-                    <div className="space-y-0.5">
-                      {lote.valorAvaliacao !== "0.00" && (
-                        <>
-                          <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                            Avaliação
-                          </p>
-                          <p className="font-bold text-primary">
-                            {formatBRL(lote.valorAvaliacao || "0")}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {lote.status === 100 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-100 text-green-700 hover:bg-green-100"
-                    >
-                      Vendido
-                    </Badge>
-                  )}
-                  {lote.status === 2 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-gray-100 text-violet-700 hover:bg-gray-100"
-                    >
-                      Em Pregão
-                    </Badge>
-                  )}
-                  {lote.status === 5 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-100 text-blue-700 hover:bg-blue-100"
-                    >
-                      Homologando
-                    </Badge>
-                  )}
-                  {lote.status === 7 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-purple-100 text-purple-700 hover:bg-purple-100"
-                    >
-                      Condicional
-                    </Badge>
-                  )}
-                  {lote.status === 1 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                    >
-                      Aberto
-                    </Badge>
-                  )}
-                  {lote.status === 10 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-red-100 text-red-700 hover:bg-red-100"
-                    >
-                      Retirado
-                    </Badge>
-                  )}
-                  {lote.status === 8 && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                    >
-                      Sem Licitante
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+              <LoteDetalheItem
+                key={lote.id}
+                lote={lote}
+                formatBRL={formatBRL}
+              />
+            ))}
       </div>
     </div>
   );
@@ -750,7 +730,11 @@ import { pegarLogoComitente } from "@/utils/leilao";
 
 const CartazLeilaoResumo = dynamic(() => import("./CartazLeilaoResumo"), {
   ssr: false,
-  loading: () => <div className="p-4 w-full h-full flex items-center justify-center"><Skeleton className="h-[400px] w-full max-w-[560px] mx-auto rounded-3xl" /></div>,
+  loading: () => (
+    <div className="p-4 w-full h-full flex items-center justify-center">
+      <Skeleton className="h-[400px] w-full max-w-[560px] mx-auto rounded-3xl" />
+    </div>
+  ),
 });
 
 function ResumoTabContent({
@@ -858,7 +842,11 @@ function ResumoTabContent({
               <td className="p-3 text-right">{stats.comLance || 0}</td>
             </tr>
             <tr>
-              <td className="p-3 font-medium">{leilao.status !== 99 ? "Arrecadação (Prévia)" : "Arrecadação (Vendidos)"}</td>
+              <td className="p-3 font-medium">
+                {leilao.status !== 99
+                  ? "Arrecadação (Prévia)"
+                  : "Arrecadação (Vendidos)"}
+              </td>
               <td className="p-3 text-right font-bold">
                 {formatBRL(stats.totalPreviaVendas)}
               </td>
@@ -894,7 +882,9 @@ function ResumoTabContent({
           <tbody className="divide-y">
             <tr className="bg-muted/30">
               <td className="p-3 font-medium">Lotes</td>
-              <td className="p-3 text-right">Total: {stats.total + stats.retirados}</td>
+              <td className="p-3 text-right">
+                Total: {stats.total + stats.retirados}
+              </td>
             </tr>
             <tr>
               <td className="p-3 font-medium">Disponíveis</td>
@@ -997,7 +987,6 @@ function ArteResultadoTabContent({
   return (
     // Reduzimos o gap (space-y-2), o padding (pt-2 pb-4) e mudamos justify-center para justify-start
     <div className="flex-1 flex flex-col items-center justify-start space-y-2 pt-2 pb-4 h-full min-h-0 ">
-
       {/* Opções de customização da Arte */}
       <div className="w-full flex justify-end px-4 mb-2">
         <Button

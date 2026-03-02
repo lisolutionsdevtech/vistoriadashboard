@@ -84,6 +84,16 @@ export type LeilaoResumo = {
   sistemaTaxa?: { descricao?: string } | null | unknown;
 };
 
+export interface Arquivo {
+  id: number;
+  site: boolean;
+  url: string;
+  tipo: {
+    id: number;
+    nome: string;
+  };
+}
+
 export interface LoteResumo {
   id: number;
   numero: number;
@@ -103,6 +113,8 @@ export interface LoteResumo {
     min?: { url: string };
   };
   bem?: {
+    placa: string;
+    chassi: string;
     id: number;
     siteTitulo: string;
     image?: {
@@ -113,6 +125,7 @@ export interface LoteResumo {
       pessoa?: { name: string };
       image?: { thumb: string };
     };
+    arquivos?: Arquivo[];
   };
   arremate?: {
     id?: number;

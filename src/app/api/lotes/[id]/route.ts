@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buscarLotesPorLeilao } from "@/services/api";
+import { buscarLotePorId } from "@/services/api";
 
 export async function GET(
   request: NextRequest,
@@ -15,13 +15,13 @@ export async function GET(
     const { obterToken } = await import("@/services/auth");
     const token = await obterToken();
 
-    const data = await buscarLotesPorLeilao(id, token);
+    const data = await buscarLotePorId(id, token);
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error(error);
+    console.error(`Erro ao buscar detalhe do lote:`, error);
     return NextResponse.json(
-      { error: "Falha ao buscar lotes do leilão" },
+      { error: "Falha ao buscar detalhe do lote" },
       { status: 500 },
     );
   }

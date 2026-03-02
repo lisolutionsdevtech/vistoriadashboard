@@ -72,12 +72,6 @@ export function LeilaoCard({ leilao, onClick }: LeilaoCardProps) {
       </CardHeader>
 
       <CardContent className="p-4 pt-2 flex-grow space-y-3">
-        {hasDestaqueItem && (
-          <p className="text-xs text-muted-foreground line-clamp-1 italic border-l-2 border-amber-400 pl-2">
-            {leilao.stats?.lote?.bem?.siteTitulo}
-          </p>
-        )}
-
         <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5 col-span-2">
             <Calendar className="h-4 w-4 text-primary" />

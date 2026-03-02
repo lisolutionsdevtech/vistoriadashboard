@@ -44,6 +44,7 @@ import {
   CheckSquare,
   Car,
   Info,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -489,96 +490,94 @@ function LoteDetalheItem({ lote, formatBRL }: LoteDetalheItemProps) {
               </p>
             </div>
           </div>
-
-          <div className="flex flex-col items-end gap-2">
-            {lote.status === 100 && (
-              <Badge
-                variant="secondary"
-                className="bg-green-100 text-green-700 hover:bg-green-100"
-              >
-                Vendido
-              </Badge>
-            )}
-            {lote.status === 2 && (
-              <Badge
-                variant="secondary"
-                className="bg-gray-100 text-violet-700 hover:bg-gray-100"
-              >
-                Em Pregão
-              </Badge>
-            )}
-            {lote.status === 5 && (
-              <Badge
-                variant="secondary"
-                className="bg-blue-100 text-blue-700 hover:bg-blue-100"
-              >
-                Homologando
-              </Badge>
-            )}
-            {lote.status === 7 && (
-              <Badge
-                variant="secondary"
-                className="bg-purple-100 text-purple-700 hover:bg-purple-100"
-              >
-                Condicional
-              </Badge>
-            )}
-            {lote.status === 1 && (
-              <Badge
-                variant="secondary"
-                className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-              >
-                Aberto
-              </Badge>
-            )}
-            {lote.status === 10 && (
-              <Badge
-                variant="secondary"
-                className="bg-red-100 text-red-700 hover:bg-red-100"
-              >
-                Retirado
-              </Badge>
-            )}
-            {lote.status === 8 && (
-              <Badge
-                variant="secondary"
-                className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-              >
-                Sem Licitante
-              </Badge>
-            )}
-
-            {detalhe && item.bem?.arquivos && (
-              <div className="flex flex-wrap gap-1.5 justify-end">
-                {(() => {
-                  const fotoERPCount = item.bem.arquivos.filter(
-                    (a) => a.tipo.nome === "Foto Site",
-                  ).length;
-                  const fotoSiteCount = item.bem.arquivos.filter(
-                    (a) => a.site === true,
-                  ).length;
-
-                  return (
-                    <>
-                      <Badge
-                        variant="outline"
-                        className={`flex items-center gap-1 px-1.5 py-0 text-[10px] ${fotoERPCount === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
-                      >
-                        {fotoERPCount} Fotos no ERP
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={`flex items-center gap-1 px-1.5 py-0 text-[10px] ${fotoSiteCount === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
-                      >
-                        {fotoSiteCount} Fotos no Site
-                      </Badge>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
         </div>
+        <div className="flex flex-col items-end gap-2 text-nowrap">
+          {lote.status === 100 && (
+            <Badge
+              variant="secondary"
+              className="bg-green-100 text-center text-green-700 hover:bg-green-100"
+            >
+              Vendido
+            </Badge>
+          )}
+          {lote.status === 2 && (
+            <Badge
+              variant="secondary"
+              className="bg-gray-100 text-center text-violet-700 hover:bg-gray-100"
+            >
+              Em Pregão
+            </Badge>
+          )}
+          {lote.status === 5 && (
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-center text-blue-700 hover:bg-blue-100"
+            >
+              Homologando
+            </Badge>
+          )}
+          {lote.status === 7 && (
+            <Badge
+              variant="secondary"
+              className="bg-purple-100 text-center text-purple-700 hover:bg-purple-100"
+            >
+              Condicional
+            </Badge>
+          )}
+          {lote.status === 1 && (
+            <Badge
+              variant="secondary"
+              className="bg-yellow-100 text-center text-yellow-700 hover:bg-yellow-100"
+            >
+              Aberto
+            </Badge>
+          )}
+          {lote.status === 10 && (
+            <Badge
+              variant="secondary"
+              className="bg-red-100 text-center text-red-700 hover:bg-red-100"
+            >
+              Retirado
+            </Badge>
+          )}
+          {lote.status === 8 && (
+            <Badge
+              variant="secondary"
+              className="bg-yellow-100 text-center text-yellow-700 hover:bg-yellow-100"
+            >
+              Sem Licitante
+            </Badge>
+          )}
+        </div>
+        {detalhe && item.bem?.arquivos && (
+          <div className="flex flex-wrap gap-1.5 justify-end pt-2">
+            {(() => {
+              const fotoERPCount = item.bem.arquivos.filter(
+                (a) => a.tipo.nome === "Foto Site",
+              ).length;
+              const fotoSiteCount = item.bem.arquivos.filter(
+                (a) => a.site === true,
+              ).length;
+
+              return (
+                <>
+                  <Badge
+                    variant="outline"
+                    className={`flex items-center gap-1 px-1.5 py-0 text-[10px] text-center text-nowrap ${fotoERPCount === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                  >
+                    {fotoERPCount} Fotos no ERP
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`flex items-center gap-1 px-1.5 py-0 text-[10px] text-center text-nowrap ${fotoSiteCount === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                  >
+                    {fotoSiteCount} Fotos no Site
+                  </Badge>
+                </>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {isLoading && (
@@ -682,15 +681,27 @@ function LotesTabContent({
       <div className="flex items-center justify-between border-b pb-2">
         <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-wrap">
           Lista de Lotes |
-          <Badge className="ml-2 font-mono">{lotes.length} Itens</Badge>
           <Badge
             onClick={() => setFilter(filter === "todos" ? "sem_foto" : "todos")}
             className={`ml-2 border-[1px] font-mono ${filter === "sem_foto" ? "bg-yellow-700 hover:bg-yellow-600 text-yellow-100" : "hover:bg-yellow-200 bg-yellow-100 text-yellow-700"} hover:cursor-pointer`}
           >
-            Filtrar Sem Foto
+            <Filter className="h-3 w-3 mr-2" /> Sem Foto Capa
           </Badge>
         </span>
       </div>
+      <Badge className="ml-2 font-mono">
+        {filter === "sem_foto"
+          ? lotes.filter(
+              (lote) =>
+                !lote.image?.thumb?.url &&
+                !lote.bem?.image?.thumb?.url &&
+                (!lote.bem?.arquivos?.filter((a) => a.tipo.nome === "Foto Site")
+                  .length ||
+                  !lote.bem?.arquivos?.filter((a) => a.site === true).length),
+            ).length
+          : lotes.length}{" "}
+        Itens
+      </Badge>
 
       <div className="grid gap-3">
         {filter === "sem_foto"

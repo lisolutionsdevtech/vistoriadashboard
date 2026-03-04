@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Jost:wght@300;400;600;700;800;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Jost:wght@300;400;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -99,4 +99,36 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Para Chrome, Edge e Safari */
+::-webkit-scrollbar {
+  width: 4px; /* largura da barra */
+  height: 4px; /* altura para rolagem horizontal */
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f100; /* cor do trilho */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #8888883f; /* cor do "polegar" */
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8888883f; /* cor quando passa o mouse */
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Para Firefox */
+* {
+  scrollbar-color: #8888883f;
+}
+
+.no-scroll-anchor {
+  overflow-anchor: none;
 }

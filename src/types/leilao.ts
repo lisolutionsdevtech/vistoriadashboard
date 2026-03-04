@@ -126,6 +126,7 @@ export interface LoteResumo {
       image?: { thumb: string };
     };
     arquivos?: Arquivo[];
+    bloqueadoLeilao?: boolean;
   };
   arremate?: {
     id?: number;

@@ -56,7 +56,7 @@ const data = {
   navMain: [
     {
       title: "Leilões",
-      url: "#",
+      url: "/leiloes",
       icon: SquareTerminal,
       // items: [
       //   {
@@ -75,14 +75,14 @@ const data = {
     },
     {
       title: "Bens",
-      url: "#",
+      url: "/bens",
       icon: Car,
     },
-    {
-      title: "Vistoria",
-      url: "#",
-      icon: ClipboardPen,
-    },
+    // {
+    //   title: "Vistoria",
+    //   url: "/vistoria",
+    //   icon: ClipboardPen,
+    // },
     // {
     //   title: "Models",
     //   url: "#",

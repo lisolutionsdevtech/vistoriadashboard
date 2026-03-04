@@ -5,6 +5,7 @@ import {
   LotesResponse,
   LoteResumo,
 } from "@/types/leilao";
+import { BensResponse, BemDetalhe } from "@/types/bens";
 import { obterToken } from "./auth";
 
 const BASE_URL = process.env.API_BASE_URL;
@@ -207,6 +208,62 @@ export async function buscarLotePorId(
 
   if (!res.ok) {
     throw new Error(`Erro ao buscar detalhe do lote ${id}: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function buscarBens(
+  search: string = "",
+  page: number = 1,
+): Promise<BensResponse> {
+  const token = await obterToken();
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: "20",
+    camposExtras: "1",
+    sortBy: "id",
+    descending: "true",
+    status: "0,2,1,3,4,100,6,5",
+    search: search,
+  });
+
+  const fullUrl = `${process.env.API_BASE_URL}/api/bens?${params.toString()}`;
+
+  const res = await fetch(fullUrl, {
+    headers: {
+      Accept: "application/json",
+      Authorization: token,
+      Origin: "https://erp.leiloespb.com.br",
+      Referer: "https://erp.leiloespb.com.br/",
+    },
+    next: { revalidate: 60 },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(
+      `Erro ao buscar bens: ${res.status} - ${text.substring(0, 100)}`,
+    );
+  }
+
+  return res.json();
+}
+
+export async function buscarBemPorId(id: number): Promise<BemDetalhe> {
+  const token = await obterToken();
+  const res = await fetch(`${process.env.API_BASE_URL}/api/bens/${id}`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: token,
+      Origin: "https://erp.leiloespb.com.br",
+      Referer: "https://erp.leiloespb.com.br/",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erro ao buscar detalhe do bem ${id}: ${res.status}`);
   }
 
   return res.json();

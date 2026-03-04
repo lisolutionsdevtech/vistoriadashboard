@@ -36,19 +36,19 @@ export const metadata: Metadata = {
     apple: [
       // Principal — iPhone Retina moderno (iOS ≥ 7)
       {
-        url: "/icons/apple-touch-icon-180.png",
+        url: "/icons/apple-touch-icon-180v3.png",
         sizes: "180x180",
         type: "image/png",
       },
       // Fallback — iPhone Retina mais antigo
       {
-        url: "/icons/apple-touch-icon-120.png",
+        url: "/icons/apple-touch-icon-120v3.png",
         sizes: "120x120",
         type: "image/png",
       },
       // iPad Retina
       {
-        url: "/icons/apple-touch-icon-152.png",
+        url: "/icons/apple-touch-icon-152v3.png",
         sizes: "152x152",
         type: "image/png",
       },

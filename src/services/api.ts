@@ -216,6 +216,7 @@ export async function buscarLotePorId(
 export async function buscarBens(
   search: string = "",
   page: number = 1,
+  status?: string,
 ): Promise<BensResponse> {
   const token = await obterToken();
   const params = new URLSearchParams({
@@ -224,7 +225,7 @@ export async function buscarBens(
     camposExtras: "1",
     sortBy: "id",
     descending: "true",
-    status: "0,2,1,3,4,100,6,5",
+    status: status || "0,2,1,3,4,100,6,5",
     search: search,
   });
 

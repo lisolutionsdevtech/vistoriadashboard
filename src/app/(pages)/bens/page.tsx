@@ -21,13 +21,14 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function BensPage() {
   const [busca, setBusca] = useState("");
+  const [status, setStatus] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [selectedBemId, setSelectedBemId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const limit = 20;
 
   const { data, error, mutate, isLoading } = useSWR<BensResponse>(
-    `/api/bens?search=${encodeURIComponent(busca)}&page=${page}`,
+    `/api/bens?search=${encodeURIComponent(busca)}&page=${page}${status ? `&status=${status}` : ""}`,
     fetcher,
     { revalidateOnFocus: false },
   );
@@ -46,6 +47,11 @@ export default function BensPage() {
     setPage(1); // Reset to first page on new search
   };
 
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatus(e.target.value || undefined);
+    setPage(1); // Reset to first page on new filter
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Search Header Area */}
@@ -62,6 +68,22 @@ export default function BensPage() {
               onChange={handleBuscaChange}
             />
           </div>
+          <select
+            id="status-filter"
+            value={status || ""}
+            onChange={handleStatusChange}
+            className="h-10 px-3 py-2 bg-background border border-input rounded-md text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Todos os status</option>
+            <option value="0">Rascunho</option>
+            <option value="1">Cadastrado</option>
+            <option value="2">Em Remoção</option>
+            <option value="3">No Pátio</option>
+            <option value="4">Em Leilão</option>
+            <option value="5">Devolvido</option>
+            <option value="6">Doado</option>
+            <option value="100">Leiloado</option>
+          </select>
           <Button
             variant="outline"
             size="icon"

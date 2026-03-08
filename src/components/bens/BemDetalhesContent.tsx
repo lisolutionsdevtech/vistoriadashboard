@@ -37,12 +37,58 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Loader2 } from "lucide-react";
 
-// Helper para converter File para Base64
+// Helper para converter File para Base64 comprimido (Web/PWA)
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
+    // Apenas com imagens maiores faremos compressão
+    if (!file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
+    reader.onload = (e) => {
+      const img = new globalThis.Image();
+      img.onerror = (error) => reject(error);
+      img.onload = () => {
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1080;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          // Fallback silencioso para raw
+          return resolve(e.target?.result as string);
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        // Comprime para formato JPEG a 75%
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+        resolve(dataUrl);
+      };
+      img.src = e.target?.result as string;
+    };
     reader.readAsDataURL(file);
   });
 }
@@ -94,22 +140,25 @@ export function BemDetalhesContent({
         }),
       });
 
-      if (!response.ok) throw new Error("Falha ao enviar arquivo");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || "Falha ao enviar arquivo para a API");
+      }
 
       toast({
         title: "Sucesso!",
         description: "A imagem foi adicionada ao bem.",
       });
 
-      // Opcional: Aqui poderíamos recarregar via mutate() do SWR se a key fosse passada ou 
+      // Opcional: Aqui poderíamos recarregar via mutate() do SWR se a key fosse passada ou
       // delegar um callback de onUploadSuccess para o parent que faz o fetch.
       // Neste PWA temporariamente dependemos do usuário fechar/abrir ou um recarregamento superior
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Erro no upload",
-        description: "Não foi possível enviar a imagem. Tente novamente.",
+        description: error?.message || "Não foi possível enviar a imagem. Tente novamente.",
       });
     } finally {
       setIsUploading(false);

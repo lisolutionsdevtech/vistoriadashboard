@@ -25,7 +25,7 @@ export async function POST(
             );
         }
 
-        const { data, filename } = body;
+        const { data, filename, tipo, permissao } = body;
 
         if (!data || !filename) {
             return NextResponse.json(
@@ -34,12 +34,12 @@ export async function POST(
             );
         }
 
-        // Payload requerido pelo ERP conforme pwa_captura_imagem_leiloes.md
+        // Payload requerido pelo ERP conforme pwa_captura_imagem_leiloes.md e visibilidade_site_fotos.md
         const payloadERP = {
             data,
             filename,
-            tipo: 1, // 1 = Foto para galeria do lote
-            permissao: 0,
+            tipo: tipo !== undefined ? tipo : 12, // 1 = Visível, 12 = Oculta
+            permissao: permissao !== undefined ? permissao : 100, // 0 = Público, 100 = ERP interno
             file: {}, // Conforme doc: objeto vazio
             done: true,
             copying: false,

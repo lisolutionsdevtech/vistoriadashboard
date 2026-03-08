@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Loader2, Star } from "lucide-react";
+import { Trash2, Loader2, Star, Eye, EyeOff } from "lucide-react";
 
 // Helper para converter File para Base64 comprimido (Web/PWA)
 function fileToBase64(file: File): Promise<string> {
@@ -126,6 +126,7 @@ export function BemDetalhesContent({
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [isSettingCapa, setIsSettingCapa] = useState<number | null>(null);
+  const [isTogglingVisibility, setIsTogglingVisibility] = useState<number | null>(null);
   const { toast } = useToast();
 
   const isFotoCapa = (arq: any) => {
@@ -153,13 +154,16 @@ export function BemDetalhesContent({
     setIsUploading(true);
     try {
       const base64String = await fileToBase64(file);
+      const isFirstPhoto = imageFiles.length === 0;
 
       const response = await fetch(`/api/bens/${bem.id}/arquivos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           data: base64String,
-          filename: file.name || `foto_pwa_${Date.now()}.jpg`
+          filename: file.name || `foto_pwa_${Date.now()}.jpg`,
+          tipo: isFirstPhoto ? 1 : 12,
+          permissao: isFirstPhoto ? 0 : 100
         }),
       });
 
@@ -254,6 +258,36 @@ export function BemDetalhesContent({
       toast({ variant: "destructive", title: "Erro", description: "Falha na comunicação de nova capa." });
     } finally {
       setIsSettingCapa(null);
+    }
+  };
+
+  const handleToggleVisibility = async (arq: any) => {
+    if (!bem?.id || !arq.id) return;
+
+    if (isFotoCapa(arq)) {
+      toast({ variant: "destructive", title: "Atenção", description: "A foto capa deve ser sempre visível no site." });
+      return;
+    }
+
+    const isCurrentlyVisible = arq.site === true;
+    const newTipo = isCurrentlyVisible ? 12 : 1;
+    const newPermissao = isCurrentlyVisible ? 100 : 0;
+
+    setIsTogglingVisibility(arq.id);
+    try {
+      const response = await fetch(`/api/bens/${bem.id}/arquivos/${arq.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: newTipo, permissao: newPermissao })
+      });
+      if (!response.ok) throw new Error("Falha ao alterar visibilidade");
+
+      toast({ title: "Sucesso", description: `Foto agora está ${isCurrentlyVisible ? "oculta" : "visível"} no site.` });
+      await refreshData();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Erro", description: "Falha ao mudar visibilidade." });
+    } finally {
+      setIsTogglingVisibility(null);
     }
   };
 
@@ -486,7 +520,8 @@ export function BemDetalhesContent({
                             isActive
                               ? "ring-2 ring-primary ring-offset-2 border-primary"
                               : "border-border",
-                            isDeletingThis && "opacity-50 grayscale"
+                            isDeletingThis && "opacity-50 grayscale",
+                            !arq.site && !isCapa && "opacity-50 blur-[1px] grayscale-[50%]"
                           )}
                           type="button"
                           disabled={isDeletingThis}
@@ -535,6 +570,30 @@ export function BemDetalhesContent({
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
                               <Star className="h-3 w-3 md:h-3 md:w-3 fill-current" />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Botão Alternar Visibilidade */}
+                        {!isCapa && arq.id && (
+                          <button
+                            type="button"
+                            disabled={isTogglingVisibility === arq.id || isDeleting === arq.id}
+                            onClick={() => handleToggleVisibility(arq)}
+                            title={arq.site ? "Ocultar do Site" : "Exibir no Site"}
+                            className={cn(
+                              "absolute -bottom-2 -left-2 border text-foreground p-1 md:p-1.5 rounded-full shadow-md transition-opacity disabled:opacity-50 hover:bg-muted z-20",
+                              arq.site
+                                ? "bg-background border-border opacity-0 group-hover:opacity-100"
+                                : "bg-destructive/10 border-destructivetext-destructive opacity-100"
+                            )}
+                          >
+                            {isTogglingVisibility === arq.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : arq.site ? (
+                              <Eye className="h-3 w-3 md:h-3 md:w-3" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 md:h-3 md:w-3 text-destructive" />
                             )}
                           </button>
                         )}

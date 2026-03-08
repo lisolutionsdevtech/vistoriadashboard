@@ -33,6 +33,7 @@ export interface ArquivoBem {
   filename: string;
   originalFilename: string;
   mimeType: string;
+  site?: boolean;
   versions?: {
     min?: { url: string };
     thumb?: { url: string };

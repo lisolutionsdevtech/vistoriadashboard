@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useSWRConfig } from "swr";
 
 import { BemDetalhe } from "@/types/bens";
 import { formatarStatusBem, badgeColor } from "@/utils/bens";
@@ -118,6 +119,7 @@ export function BemDetalhesContent({
   TitleComponent,
   HeaderComponent,
 }: BemDetalhesContentProps) {
+  const { mutate } = useSWRConfig();
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
@@ -150,6 +152,7 @@ export function BemDetalhesContent({
         description: "A imagem foi adicionada ao bem.",
       });
 
+      mutate(`/api/bens/${bem.id}`);
       // Opcional: Aqui poderíamos recarregar via mutate() do SWR se a key fosse passada ou
       // delegar um callback de onUploadSuccess para o parent que faz o fetch.
       // Neste PWA temporariamente dependemos do usuário fechar/abrir ou um recarregamento superior
@@ -187,6 +190,10 @@ export function BemDetalhesContent({
         description: "A foto foi apagada com sucesso.",
       });
 
+      if (activeImage === proxyImageUrl(bem.arquivos?.find(a => a.id === idArquivo)?.url ?? "")) {
+        setActiveImage(null);
+      }
+      mutate(`/api/bens/${bem.id}`);
     } catch (error) {
       console.error(error);
       toast({

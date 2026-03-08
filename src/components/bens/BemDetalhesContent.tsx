@@ -24,7 +24,16 @@ import {
   Warehouse,
   AlertCircle,
   Truck,
+  ImagePlus,
+  Camera,
 } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const proxyImageUrl = (url: string | null | undefined) => {
   if (!url) return "";
@@ -203,9 +212,67 @@ export function BemDetalhesContent({
               )}
             </div>
 
-            {imageFiles.length > 1 && (
+            <input
+              type="file"
+              id="upload-foto-bem"
+              className="hidden"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                  console.log("Arquivos selecionados:", files);
+                  // Lógica de upload entrará aqui
+                }
+              }}
+            />
+
+            <input
+              type="file"
+              id="camera-foto-bem"
+              className="hidden"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                  console.log("Foto tirada na câmera:", files);
+                  // Lógica de upload entrará aqui
+                }
+              }}
+            />
+
+            {imageFiles.length > 0 ? (
               <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-2 scrollbar-hide">
-                <div className="flex w-max min-w-full gap-2 px-1">
+                <div className="flex w-max min-w-full gap-2 px-1 text-sm">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-lg border-2 border-dashed border-primary/50 text-primary bg-primary/5 transition-all hover:bg-primary/10 hover:border-primary flex flex-col items-center justify-center gap-1 group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        type="button"
+                        title="Adicionar fotos"
+                      >
+                        <ImagePlus className="h-5 w-5 md:h-6 md:w-6 transition-transform duration-300 group-hover:scale-110" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-48 z-[100]">
+                      <DropdownMenuItem
+                        className="gap-2 cursor-pointer font-medium"
+                        onClick={() => document.getElementById("camera-foto-bem")?.click()}
+                      >
+                        <Camera className="h-4 w-4 text-muted-foreground" />
+                        <span>Tirar Foto</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="gap-2 cursor-pointer font-medium"
+                        onClick={() => document.getElementById("upload-foto-bem")?.click()}
+                      >
+                        <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                        <span>Escolher da Galeria</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   {imageFiles.map((arq) => {
                     const originalUrl = (arq.url ?? "").trim();
                     const key =
@@ -244,6 +311,36 @@ export function BemDetalhesContent({
                   })}
                 </div>
               </div>
+            ) : (
+              <div className="flex justify-start px-1 mt-2 text-sm">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-primary/50 text-primary bg-primary/5 transition-all hover:bg-primary/10 hover:border-primary group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      type="button"
+                    >
+                      <ImagePlus className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="text-xs md:text-sm font-medium">Adicionar 1ª foto</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48 z-[100]">
+                    <DropdownMenuItem
+                      className="gap-2 cursor-pointer font-medium"
+                      onClick={() => document.getElementById("camera-foto-bem")?.click()}
+                    >
+                      <Camera className="h-4 w-4 text-muted-foreground" />
+                      <span>Tirar Foto</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2 cursor-pointer font-medium"
+                      onClick={() => document.getElementById("upload-foto-bem")?.click()}
+                    >
+                      <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                      <span>Escolher da Galeria</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
           </div>
 
@@ -254,63 +351,63 @@ export function BemDetalhesContent({
               bem.anoModelo ||
               bem.cor ||
               bem.combustivel) && (
-              <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">
-                <h4 className="font-semibold flex items-center gap-2 text-primary">
-                  <Truck className="h-4 w-4" /> Especificações
-                </h4>
+                <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">
+                  <h4 className="font-semibold flex items-center gap-2 text-primary">
+                    <Truck className="h-4 w-4" /> Especificações
+                  </h4>
 
-                <div className="grid grid-cols-2 gap-y-2 text-sm min-w-0">
-                  {bem.marcaModelo && (
-                    <div className="col-span-2 flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Marca/Modelo
-                      </span>
-                      <span className="font-medium break-words">
-                        {bem.marcaModelo}
-                      </span>
-                    </div>
-                  )}
+                  <div className="grid grid-cols-2 gap-y-2 text-sm min-w-0">
+                    {bem.marcaModelo && (
+                      <div className="col-span-2 flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Marca/Modelo
+                        </span>
+                        <span className="font-medium break-words">
+                          {bem.marcaModelo}
+                        </span>
+                      </div>
+                    )}
 
-                  {bem.anoFabricacao && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Ano Fab.
-                      </span>
-                      <span className="font-medium">{bem.anoFabricacao}</span>
-                    </div>
-                  )}
+                    {bem.anoFabricacao && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Ano Fab.
+                        </span>
+                        <span className="font-medium">{bem.anoFabricacao}</span>
+                      </div>
+                    )}
 
-                  {bem.anoModelo && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Ano Mod.
-                      </span>
-                      <span className="font-medium">{bem.anoModelo}</span>
-                    </div>
-                  )}
+                    {bem.anoModelo && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Ano Mod.
+                        </span>
+                        <span className="font-medium">{bem.anoModelo}</span>
+                      </div>
+                    )}
 
-                  {bem.cor && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">Cor</span>
-                      <span className="font-medium break-words">
-                        {typeof bem.cor === "string" ? bem.cor : bem.cor.nome}
-                      </span>
-                    </div>
-                  )}
+                    {bem.cor && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">Cor</span>
+                        <span className="font-medium break-words">
+                          {typeof bem.cor === "string" ? bem.cor : bem.cor.nome}
+                        </span>
+                      </div>
+                    )}
 
-                  {bem.combustivel && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Combustível
-                      </span>
-                      <span className="font-medium break-words">
-                        {bem.combustivel}
-                      </span>
-                    </div>
-                  )}
+                    {bem.combustivel && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Combustível
+                        </span>
+                        <span className="font-medium break-words">
+                          {bem.combustivel}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {(bem.placa || bem.chassi || bem.renavam) && (
               <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { obterToken } from "@/services/auth";
 
 export async function GET(request: NextRequest) {
     const url = request.nextUrl.searchParams.get("url");
@@ -8,7 +9,18 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const response = await fetch(url);
+        const headersInit: HeadersInit = {};
+
+        if (url.includes("suporteleiloes.com.br") || url.includes("leiloespb.com.br")) {
+            const token = await obterToken();
+            if (token) {
+                headersInit["Authorization"] = token;
+                // ERP exige em alguns retornos JSON/Image o setup de accepts
+                headersInit["Accept"] = "application/json, image/*";
+            }
+        }
+
+        const response = await fetch(url, { headers: headersInit });
         if (!response.ok) throw new Error(`External response status: ${response.status}`);
 
         const blob = await response.blob();

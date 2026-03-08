@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Star } from "lucide-react";
 
 // Helper para converter File para Base64 comprimido (Web/PWA)
 function fileToBase64(file: File): Promise<string> {
@@ -125,7 +125,15 @@ export function BemDetalhesContent({
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [isSettingCapa, setIsSettingCapa] = useState<number | null>(null);
   const { toast } = useToast();
+
+  const isFotoCapa = (arq: any) => {
+    const arqUrl = (arq.url || "").trim().toLowerCase();
+    const coverFull = (bem?.image?.full?.url || "").trim().toLowerCase();
+    const coverThumb = (bem?.image?.thumb?.url || "").trim().toLowerCase();
+    return arqUrl !== "" && (arqUrl === coverFull || arqUrl === coverThumb);
+  };
 
   const refreshData = async () => {
     // 1. Limpa agressivamente a cache do SWR correspondente a bens
@@ -183,16 +191,27 @@ export function BemDetalhesContent({
     }
   };
 
-  const handleDelete = async (idArquivo: number) => {
-    if (!bem?.id) return;
+  const handleDelete = async (arq: any) => {
+    if (!bem?.id || !arq.id) return;
 
-    if (!confirm("Tem certeza que deseja apagar essa foto permanentemente?")) {
+    const isCapa = isFotoCapa(arq);
+    const msg = isCapa
+      ? "Deseja mesmo excluí-la de vez? Esta é a Foto Principal (Capa)!"
+      : "Tem certeza que deseja apagar essa foto permanentemente?";
+
+    if (!confirm(msg)) {
       return;
     }
 
-    setIsDeleting(idArquivo);
+    setIsDeleting(arq.id);
     try {
-      const response = await fetch(`/api/bens/${bem.id}/arquivos/${idArquivo}`, {
+      // 1. Caso seja a capa, desencadinha a foto global do BD do Site primeiro:
+      if (isCapa) {
+        await fetch(`/api/bens/${bem.id}/photo`, { method: "DELETE" });
+      }
+
+      // 2. Apaga definitivamente do FTP e da Galeria:
+      const response = await fetch(`/api/bens/${bem.id}/arquivos/${arq.id}`, {
         method: "DELETE",
       });
 
@@ -203,7 +222,7 @@ export function BemDetalhesContent({
         description: "A foto foi apagada com sucesso.",
       });
 
-      if (activeImage === proxyImageUrl(bem.arquivos?.find(a => a.id === idArquivo)?.url ?? "")) {
+      if (activeImage === proxyImageUrl(arq.url || "")) {
         setActiveImage(null);
       }
       await refreshData();
@@ -216,6 +235,25 @@ export function BemDetalhesContent({
       });
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const handleSetCapa = async (idArquivo: number) => {
+    if (!bem?.id) return;
+
+    setIsSettingCapa(idArquivo);
+    try {
+      const response = await fetch(`/api/bens/${bem.id}/arquivos/${idArquivo}/definirFotoPrincipal`, {
+        method: "POST"
+      });
+      if (!response.ok) throw new Error("Falha ao definir capa");
+
+      toast({ title: "Capa Definida!", description: "Foto apontada como principal do Lote." });
+      await refreshData();
+    } catch (err) {
+      toast({ variant: "destructive", title: "Erro", description: "Falha na comunicação de nova capa." });
+    } finally {
+      setIsSettingCapa(null);
     }
   };
 
@@ -437,6 +475,7 @@ export function BemDetalhesContent({
                       (activeImage ?? "").trim() === (arq.url ?? "").trim();
 
                     const isDeletingThis = isDeleting === arq.id;
+                    const isCapa = isFotoCapa(arq);
 
                     return (
                       <div key={key} className="relative group shrink-0 w-16 h-16 md:w-20 md:h-20">
@@ -461,18 +500,41 @@ export function BemDetalhesContent({
                           />
                         </button>
 
+                        {isCapa && (
+                          <Badge className="absolute bottom-0 inset-x-0 rounded-none rounded-b-lg text-[8px] md:text-[10px] py-0.5 px-1 justify-center bg-yellow-500 hover:bg-yellow-600 text-white border-0 z-10 pointer-events-none text-center">
+                            Capa
+                          </Badge>
+                        )}
+
                         {/* Botão de excluir arquivo (lixeira voadora) */}
                         {arq.id && (
                           <button
                             type="button"
                             disabled={isDeletingThis}
-                            onClick={() => handleDelete(arq.id!)}
-                            className="absolute -top-2 -right-2 bg-destructive text-white p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                            onClick={() => handleDelete(arq)}
+                            className="absolute -top-2 -right-2 bg-destructive text-white p-1 md:p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 z-20"
                           >
                             {isDeletingThis ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3 md:h-3 md:w-3" />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Botão Tornar Capa */}
+                        {!isCapa && arq.id && (
+                          <button
+                            type="button"
+                            disabled={isSettingCapa === arq.id || isDeleting === arq.id}
+                            onClick={() => handleSetCapa(arq.id!)}
+                            title="Tornar imagem de capa"
+                            className="absolute -top-2 -left-2 bg-background border border-border text-yellow-500 p-1 md:p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 hover:bg-yellow-50 z-20"
+                          >
+                            {isSettingCapa === arq.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Star className="h-3 w-3 md:h-3 md:w-3 fill-current" />
                             )}
                           </button>
                         )}

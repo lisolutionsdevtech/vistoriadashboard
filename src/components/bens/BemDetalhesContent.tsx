@@ -286,23 +286,21 @@ export function BemDetalhesContent({
     }
 
     const isCurrentlyVisible = isArqVisible(arq);
-    const newTipo = isCurrentlyVisible ? 12 : 1;
-    const newPermissao = isCurrentlyVisible ? 100 : 0;
+    const newSiteValue = !isCurrentlyVisible;
 
     setIsTogglingVisibility(arq.id);
     try {
       const response = await fetch(`/api/bens/${bem.id}/arquivos/${arq.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo: newTipo, permissao: newPermissao })
+        body: JSON.stringify({ site: newSiteValue })
       });
       if (!response.ok) throw new Error("Falha ao alterar visibilidade");
 
-      const newState = !isCurrentlyVisible;
-      toast({ title: "Sucesso", description: `Foto agora está ${newState ? "visível" : "oculta"} no site.` });
+      toast({ title: "Sucesso", description: `Foto agora está ${newSiteValue ? "visível" : "oculta"} no site.` });
 
       // Atualiza estado local para re-render imediato
-      setVisibilityOverrides(prev => ({ ...prev, [arq.id]: newState }));
+      setVisibilityOverrides(prev => ({ ...prev, [arq.id]: newSiteValue }));
 
       await refreshData();
     } catch (err) {

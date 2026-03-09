@@ -84,11 +84,11 @@ export async function PATCH(
 
     try {
         const body = await request.json();
-        const { tipo, permissao } = body;
+        const { site } = body;
 
-        if (tipo === undefined || permissao === undefined) {
+        if (typeof site !== "boolean") {
             return NextResponse.json(
-                { error: "Campos 'tipo' e 'permissao' são obrigatórios." },
+                { error: "Campo 'site' (boolean) é obrigatório." },
                 { status: 400 }
             );
         }
@@ -105,8 +105,6 @@ export async function PATCH(
         const baseUrl = process.env.API_BASE_URL;
         const urlPatch = `${baseUrl}/api/bens/${idBem}/arquivos/${idArquivo}`;
 
-        const payload = { tipo, permissao };
-
         const res = await fetch(urlPatch, {
             method: "PATCH",
             headers: {
@@ -116,20 +114,20 @@ export async function PATCH(
                 Origin: "https://erp.leiloespb.com.br",
                 Referer: "https://erp.leiloespb.com.br/",
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ site }),
         });
 
         if (!res.ok) {
             const errorText = await res.text();
             console.error(`[API Patch Arquivo] Error Status: ${res.status}`, errorText);
             return NextResponse.json(
-                { error: `Falha ao atualizar arquivo no ERP: ${res.statusText}` },
+                { error: `Falha ao atualizar visibilidade no ERP: ${res.statusText}` },
                 { status: res.status }
             );
         }
 
         return NextResponse.json({
-            message: "Visibilidade do arquivo atualizada com sucesso",
+            message: `Foto agora está ${site ? "visível" : "oculta"} no site`,
         });
 
     } catch (error) {

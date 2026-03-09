@@ -1,3 +1,5 @@
+import { BemDetalhe, BemResumo } from "./bens";
+
 export type ApiDate = {
   date: string;
   timezone?: string;
@@ -112,22 +114,7 @@ export interface LoteResumo {
     thumb?: { url: string };
     min?: { url: string };
   };
-  bem?: {
-    placa: string;
-    chassi: string;
-    id: number;
-    siteTitulo: string;
-    image?: {
-      thumb?: { url: string };
-    };
-    comitente?: {
-      id: number;
-      pessoa?: { name: string };
-      image?: { thumb: string };
-    };
-    arquivos?: Arquivo[];
-    bloqueadoLeilao?: boolean;
-  };
+  bem?: BemDetalhe;
   arremate?: {
     id?: number;
     condicional?: boolean;

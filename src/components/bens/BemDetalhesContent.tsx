@@ -131,10 +131,16 @@ export function BemDetalhesContent({
   type PendingUpload = { previewUrl: string; base64: string; filename: string };
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [pendingDeletes, setPendingDeletes] = useState<Set<number>>(new Set());
-  const [visibilityOverrides, setVisibilityOverrides] = useState<Record<number, boolean>>({});
+  const [visibilityOverrides, setVisibilityOverrides] = useState<
+    Record<number, boolean>
+  >({});
   const [pendingCapaId, setPendingCapaId] = useState<number | null>(null);
 
-  const hasPendingChanges = pendingUploads.length > 0 || pendingDeletes.size > 0 || Object.keys(visibilityOverrides).length > 0 || pendingCapaId !== null;
+  const hasPendingChanges =
+    pendingUploads.length > 0 ||
+    pendingDeletes.size > 0 ||
+    Object.keys(visibilityOverrides).length > 0 ||
+    pendingCapaId !== null;
 
   // Determina se o arquivo está visível no site
   const isArqVisible = (arq: any): boolean => {
@@ -158,7 +164,10 @@ export function BemDetalhesContent({
   const refreshData = async () => {
     setVisibilityOverrides({});
     setPendingDeletes(new Set());
-    setPendingUploads(prev => { prev.forEach(u => URL.revokeObjectURL(u.previewUrl)); return []; });
+    setPendingUploads((prev) => {
+      prev.forEach((u) => URL.revokeObjectURL(u.previewUrl));
+      return [];
+    });
     setPendingCapaId(null);
     await mutate(() => true, undefined, { revalidate: true });
     router.refresh();
@@ -177,12 +186,23 @@ export function BemDetalhesContent({
         const file = files[i];
         const previewUrl = URL.createObjectURL(file);
         const base64 = await fileToBase64(file);
-        newUploads.push({ previewUrl, base64, filename: file.name || `foto_pwa_${Date.now()}_${i}.jpg` });
+        newUploads.push({
+          previewUrl,
+          base64,
+          filename: file.name || `foto_pwa_${Date.now()}_${i}.jpg`,
+        });
       }
-      setPendingUploads(prev => [...prev, ...newUploads]);
-      toast({ title: `${newUploads.length} foto(s) adicionada(s)`, description: "Clique em Salvar para confirmar." });
+      setPendingUploads((prev) => [...prev, ...newUploads]);
+      toast({
+        title: `${newUploads.length} foto(s) adicionada(s)`,
+        description: "Clique em Salvar para confirmar.",
+      });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro", description: "Não foi possível processar as imagens." });
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível processar as imagens.",
+      });
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -197,26 +217,39 @@ export function BemDetalhesContent({
       : "Tem certeza que deseja apagar essa foto?";
     if (!confirm(msg)) return;
 
-    setPendingDeletes(prev => new Set(prev).add(arq.id));
+    setPendingDeletes((prev) => new Set(prev).add(arq.id));
     if (activeImage === proxyImageUrl(arq.url || "")) setActiveImage(null);
     if (isCapa) setPendingCapaId(null);
-    toast({ title: "Foto marcada para exclusão", description: "Clique em Salvar para confirmar." });
+    toast({
+      title: "Foto marcada para exclusão",
+      description: "Clique em Salvar para confirmar.",
+    });
   };
 
   const handleSetCapa = (idArquivo: number) => {
     setPendingCapaId(idArquivo);
-    toast({ title: "Capa alterada", description: "Clique em Salvar para confirmar." });
+    toast({
+      title: "Capa alterada",
+      description: "Clique em Salvar para confirmar.",
+    });
   };
 
   const handleToggleVisibility = (arq: any) => {
     if (!arq.id) return;
     if (isFotoCapa(arq)) {
-      toast({ variant: "destructive", title: "Atenção", description: "A foto capa deve ser sempre visível." });
+      toast({
+        variant: "destructive",
+        title: "Atenção",
+        description: "A foto capa deve ser sempre visível.",
+      });
       return;
     }
     const newVal = !isArqVisible(arq);
-    setVisibilityOverrides(prev => ({ ...prev, [arq.id]: newVal }));
-    toast({ title: `Foto ${newVal ? "visível" : "oculta"}`, description: "Clique em Salvar para confirmar." });
+    setVisibilityOverrides((prev) => ({ ...prev, [arq.id]: newVal }));
+    toast({
+      title: `Foto ${newVal ? "visível" : "oculta"}`,
+      description: "Clique em Salvar para confirmar.",
+    });
   };
 
   // --- HANDLER SALVAR (processa tudo de uma vez) ---
@@ -232,27 +265,40 @@ export function BemDetalhesContent({
           const res = await fetch(`/api/bens/${bem.id}/arquivos`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ data: upload.base64, filename: upload.filename, tipo: 1, permissao: 0 }),
+            body: JSON.stringify({
+              data: upload.base64,
+              filename: upload.filename,
+              tipo: 1,
+              permissao: 0,
+            }),
           });
           if (!res.ok) erros++;
-        } catch { erros++; }
+        } catch {
+          erros++;
+        }
       }
 
       // 2. Processar exclusões pendentes
       for (const idArq of pendingDeletes) {
         try {
           // Verifica se era capa original
-          const arqOriginal = imageFiles.find(a => a.id === idArq);
+          const arqOriginal = imageFiles.find((a) => a.id === idArq);
           if (arqOriginal) {
             const arqUrl = (arqOriginal.url || "").trim().toLowerCase();
-            const coverFull = (bem?.image?.full?.url || "").trim().toLowerCase();
+            const coverFull = (bem?.image?.full?.url || "")
+              .trim()
+              .toLowerCase();
             if (arqUrl && arqUrl === coverFull) {
               await fetch(`/api/bens/${bem.id}/photo`, { method: "DELETE" });
             }
           }
-          const res = await fetch(`/api/bens/${bem.id}/arquivos/${idArq}`, { method: "DELETE" });
+          const res = await fetch(`/api/bens/${bem.id}/arquivos/${idArq}`, {
+            method: "DELETE",
+          });
           if (!res.ok) erros++;
-        } catch { erros++; }
+        } catch {
+          erros++;
+        }
       }
 
       // 3. Processar mudanças de visibilidade
@@ -264,27 +310,45 @@ export function BemDetalhesContent({
             body: JSON.stringify({ site: siteVal }),
           });
           if (!res.ok) erros++;
-        } catch { erros++; }
+        } catch {
+          erros++;
+        }
       }
 
       // 4. Processar nova capa
       if (pendingCapaId !== null) {
         try {
-          const res = await fetch(`/api/bens/${bem.id}/arquivos/${pendingCapaId}/definirFotoPrincipal`, { method: "POST" });
+          const res = await fetch(
+            `/api/bens/${bem.id}/arquivos/${pendingCapaId}/definirFotoPrincipal`,
+            { method: "POST" },
+          );
           if (!res.ok) erros++;
-        } catch { erros++; }
+        } catch {
+          erros++;
+        }
       }
 
       // 5. Refresh final
       await refreshData();
 
       if (erros > 0) {
-        toast({ variant: "destructive", title: "Atenção", description: `Salvo com ${erros} erro(s). Verifique.` });
+        toast({
+          variant: "destructive",
+          title: "Atenção",
+          description: `Salvo com ${erros} erro(s). Verifique.`,
+        });
       } else {
-        toast({ title: "Salvo!", description: "Todas as alterações foram aplicadas." });
+        toast({
+          title: "Salvo!",
+          description: "Todas as alterações foram aplicadas.",
+        });
       }
     } catch (err) {
-      toast({ variant: "destructive", title: "Erro", description: "Falha ao salvar alterações." });
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao salvar alterações.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -458,7 +522,7 @@ export function BemDetalhesContent({
               onChange={handleUpload}
             />
 
-            {(imageFiles.length > 0 || pendingUploads.length > 0) ? (
+            {imageFiles.length > 0 || pendingUploads.length > 0 ? (
               <div className="w-full min-w-0 overflow-x-auto pb-4 pt-3 scrollbar-hide">
                 <div className="flex w-max min-w-full gap-3 px-1 text-sm">
                   <DropdownMenu>
@@ -479,14 +543,18 @@ export function BemDetalhesContent({
                     <DropdownMenuContent align="start" className="w-48 z-[100]">
                       <DropdownMenuItem
                         className="gap-2 cursor-pointer font-medium"
-                        onClick={() => document.getElementById("camera-foto-bem")?.click()}
+                        onClick={() =>
+                          document.getElementById("camera-foto-bem")?.click()
+                        }
                       >
                         <Camera className="h-4 w-4 text-muted-foreground" />
                         <span>Tirar Foto</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="gap-2 cursor-pointer font-medium"
-                        onClick={() => document.getElementById("upload-foto-bem")?.click()}
+                        onClick={() =>
+                          document.getElementById("upload-foto-bem")?.click()
+                        }
                       >
                         <ImagePlus className="h-4 w-4 text-muted-foreground" />
                         <span>Escolher da Galeria</span>
@@ -498,18 +566,29 @@ export function BemDetalhesContent({
                     .filter((arq) => !pendingDeletes.has(arq.id!))
                     .map((arq) => {
                       const originalUrl = (arq.url ?? "").trim();
-                      const key = arq.id ?? originalUrl ?? `${arq.filename ?? "foto"}`;
-                      const thumbUrl = (arq.versions?.thumb?.url || arq.url || "").trim();
-                      const isActive = (activeImage ?? "").trim() === (arq.url ?? "").trim();
+                      const key =
+                        arq.id ?? originalUrl ?? `${arq.filename ?? "foto"}`;
+                      const thumbUrl = (
+                        arq.versions?.thumb?.url ||
+                        arq.url ||
+                        ""
+                      ).trim();
+                      const isActive =
+                        (activeImage ?? "").trim() === (arq.url ?? "").trim();
                       const isCapa = isFotoCapa(arq);
 
                       return (
-                        <div key={key} className="relative group shrink-0 w-20 h-20 md:w-32 md:h-32">
+                        <div
+                          key={key}
+                          className="relative group shrink-0 w-20 h-20 md:w-32 md:h-32"
+                        >
                           <button
                             onClick={() => setActiveImage(originalUrl || null)}
                             className={cn(
                               "relative w-full h-full rounded-lg border overflow-hidden bg-muted transition-all hover:opacity-80 block",
-                              isActive ? "ring-2 ring-primary ring-offset-2 border-primary" : "border-border"
+                              isActive
+                                ? "ring-2 ring-primary ring-offset-2 border-primary"
+                                : "border-border",
                             )}
                             type="button"
                           >
@@ -552,36 +631,53 @@ export function BemDetalhesContent({
                           )}
 
                           {/* Botão Alternar Visibilidade */}
-                          {!isCapa && arq.id && (() => {
-                            const visible = isArqVisible(arq);
-                            return (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleToggleVisibility(arq); }}
-                                title={visible ? "Ocultar do Site" : "Exibir no Site"}
-                                className={cn(
-                                  "absolute -bottom-1 -left-1 border p-1.5 md:p-2 rounded-full shadow-md transition-all z-20",
-                                  visible
-                                    ? "bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600"
-                                    : "bg-red-500 border-red-600 text-white hover:bg-red-600"
-                                )}
-                              >
-                                {visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                              </button>
-                            );
-                          })()}
+                          {!isCapa &&
+                            arq.id &&
+                            (() => {
+                              const visible = isArqVisible(arq);
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleVisibility(arq);
+                                  }}
+                                  title={
+                                    visible
+                                      ? "Ocultar do Site"
+                                      : "Exibir no Site"
+                                  }
+                                  className={cn(
+                                    "absolute -bottom-1 -left-1 border p-1.5 md:p-2 rounded-full shadow-md transition-all z-20",
+                                    visible
+                                      ? "bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600"
+                                      : "bg-red-500 border-red-600 text-white hover:bg-red-600",
+                                  )}
+                                >
+                                  {visible ? (
+                                    <Eye className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <EyeOff className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              );
+                            })()}
                         </div>
                       );
                     })}
 
                   {/* Cards de preview local (uploads pendentes) */}
                   {pendingUploads.map((upload, idx) => (
-                    <div key={`pending-${idx}`} className="relative group shrink-0 w-20 h-20 md:w-32 md:h-32">
+                    <div
+                      key={`pending-${idx}`}
+                      className="relative group shrink-0 w-20 h-20 md:w-32 md:h-32"
+                    >
                       <button
                         onClick={() => setActiveImage(upload.previewUrl)}
                         className={cn(
                           "relative w-full h-full rounded-lg border-2 border-dashed border-emerald-500 overflow-hidden bg-muted transition-all hover:opacity-80 block",
-                          activeImage === upload.previewUrl && "ring-2 ring-primary ring-offset-2"
+                          activeImage === upload.previewUrl &&
+                            "ring-2 ring-primary ring-offset-2",
                         )}
                         type="button"
                       >
@@ -600,7 +696,9 @@ export function BemDetalhesContent({
                         type="button"
                         onClick={() => {
                           URL.revokeObjectURL(upload.previewUrl);
-                          setPendingUploads(prev => prev.filter((_, i) => i !== idx));
+                          setPendingUploads((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          );
                           toast({ title: "Upload cancelado" });
                         }}
                         className="absolute -top-2 -right-2 bg-destructive text-white p-1 md:p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-20"
@@ -633,14 +731,18 @@ export function BemDetalhesContent({
                   <DropdownMenuContent align="start" className="w-48 z-[100]">
                     <DropdownMenuItem
                       className="gap-2 cursor-pointer font-medium"
-                      onClick={() => document.getElementById("camera-foto-bem")?.click()}
+                      onClick={() =>
+                        document.getElementById("camera-foto-bem")?.click()
+                      }
                     >
                       <Camera className="h-4 w-4 text-muted-foreground" />
                       <span>Tirar Foto</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="gap-2 cursor-pointer font-medium"
-                      onClick={() => document.getElementById("upload-foto-bem")?.click()}
+                      onClick={() =>
+                        document.getElementById("upload-foto-bem")?.click()
+                      }
                     >
                       <ImagePlus className="h-4 w-4 text-muted-foreground" />
                       <span>Escolher da Galeria</span>
@@ -677,63 +779,63 @@ export function BemDetalhesContent({
               bem.anoModelo ||
               bem.cor ||
               bem.combustivel) && (
-                <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">
-                  <h4 className="font-semibold flex items-center gap-2 text-primary">
-                    <Truck className="h-4 w-4" /> Especificações
-                  </h4>
+              <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">
+                <h4 className="font-semibold flex items-center gap-2 text-primary">
+                  <Truck className="h-4 w-4" /> Especificações
+                </h4>
 
-                  <div className="grid grid-cols-2 gap-y-2 text-sm min-w-0">
-                    {bem.marcaModelo && (
-                      <div className="col-span-2 flex flex-col min-w-0">
-                        <span className="text-xs text-muted-foreground">
-                          Marca/Modelo
-                        </span>
-                        <span className="font-medium break-words">
-                          {bem.marcaModelo}
-                        </span>
-                      </div>
-                    )}
+                <div className="grid grid-cols-2 gap-y-2 text-sm min-w-0">
+                  {bem.marcaModelo && (
+                    <div className="col-span-2 flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground">
+                        Marca/Modelo
+                      </span>
+                      <span className="font-medium break-words">
+                        {bem.marcaModelo}
+                      </span>
+                    </div>
+                  )}
 
-                    {bem.anoFabricacao && (
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-muted-foreground">
-                          Ano Fab.
-                        </span>
-                        <span className="font-medium">{bem.anoFabricacao}</span>
-                      </div>
-                    )}
+                  {bem.anoFabricacao && (
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground">
+                        Ano Fab.
+                      </span>
+                      <span className="font-medium">{bem.anoFabricacao}</span>
+                    </div>
+                  )}
 
-                    {bem.anoModelo && (
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-muted-foreground">
-                          Ano Mod.
-                        </span>
-                        <span className="font-medium">{bem.anoModelo}</span>
-                      </div>
-                    )}
+                  {bem.anoModelo && (
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground">
+                        Ano Mod.
+                      </span>
+                      <span className="font-medium">{bem.anoModelo}</span>
+                    </div>
+                  )}
 
-                    {bem.cor && (
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-muted-foreground">Cor</span>
-                        <span className="font-medium break-words">
-                          {typeof bem.cor === "string" ? bem.cor : bem.cor.nome}
-                        </span>
-                      </div>
-                    )}
+                  {bem.cor && (
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground">Cor</span>
+                      <span className="font-medium break-words">
+                        {typeof bem.cor === "string" ? bem.cor : bem.cor.nome}
+                      </span>
+                    </div>
+                  )}
 
-                    {bem.combustivel && (
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-muted-foreground">
-                          Combustível
-                        </span>
-                        <span className="font-medium break-words">
-                          {bem.combustivel}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  {bem.combustivel && (
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground">
+                        Combustível
+                      </span>
+                      <span className="font-medium break-words">
+                        {bem.combustivel}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
             {(bem.placa || bem.chassi || bem.renavam) && (
               <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">

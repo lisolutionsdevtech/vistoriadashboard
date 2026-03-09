@@ -90,7 +90,7 @@ export function LeilaoDetalhesDialog({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] h-[85vh] md:w-[900px] md:h-[700px] p-0 overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] md:w-[900px] h-dvh p-0 overflow-hidden flex flex-col">
           <LeilaoDetalhesContent
             leilao={leilao}
             isLoading={isLoading}
@@ -106,7 +106,7 @@ export function LeilaoDetalhesDialog({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[90vh] p-0 flex flex-col">
+      <DrawerContent className="h-dvh p-0 flex flex-col">
         <LeilaoDetalhesContent
           leilao={leilao}
           isLoading={isLoading}
@@ -385,9 +385,10 @@ function LeilaoDetalhesContent({
 interface LoteDetalheItemProps {
   lote: LoteResumo;
   formatBRL: (val: number | string) => string;
+  onClick: (id: number) => void;
 }
 
-function LoteDetalheItem({ lote, formatBRL }: LoteDetalheItemProps) {
+function LoteDetalheItem({ lote, formatBRL, onClick }: LoteDetalheItemProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isVisible = useIntersectionObserver(containerRef, {
     rootMargin: "0px 0px 400px 0px", // Carregar quando estiver a 400px de entrar na tela
@@ -403,6 +404,7 @@ function LoteDetalheItem({ lote, formatBRL }: LoteDetalheItemProps) {
 
   return (
     <div
+      onClick={() => onClick(item.id)}
       ref={containerRef}
       className={`relative flex gap-4 p-4 border rounded-lg hover:bg-muted transition-colors hover:cursor-pointer overflow-hidden ${lote.status === 10 && "bg-red-100 hover:bg-red-200"}`}
     >
@@ -538,7 +540,7 @@ function LoteDetalheItem({ lote, formatBRL }: LoteDetalheItemProps) {
           <div className="flex flex-wrap gap-1.5 justify-end pt-2">
             {(() => {
               const fotoERPCount = item.bem.arquivos.filter(
-                (a) => a.tipo.nome === "Foto Site",
+                (a) => a.tipo?.nome === "Foto Site",
               ).length;
               const fotoSiteCount = item.bem.arquivos.filter(
                 (a) => a.site === true,
@@ -590,6 +592,8 @@ function LotesTabContent({
   isValidating: boolean;
 }) {
   const [filter, setFilter] = useState<"todos" | "sem_foto">("todos");
+  const [selectedBemId, setSelectedBemId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const formatBRL = (val: number | string) => {
     const num = typeof val === "string" ? parseFloat(val) : val;
@@ -628,41 +632,6 @@ function LotesTabContent({
 
   return (
     <div className="space-y-6">
-      {/* <div className="grid grid-cols-2 gap-3">
-        <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-center">
-          <p className="text-[10px] uppercase text-blue-700 font-semibold">
-            Com Lance
-          </p>
-          <p className="text-xl font-bold text-blue-700">
-            {stats?.comLance || 0}
-          </p>
-        </div>
-        <div className="bg-orange-50/50 p-3 rounded-lg border border-orange-100 text-center">
-          <p className="text-[10px] uppercase text-orange-700 font-semibold">
-            Sem Lance
-          </p>
-          <p className="text-xl font-bold text-orange-700">
-            {stats?.semLance || 0}
-          </p>
-        </div>
-        <div className="bg-green-50/50 p-3 rounded-lg border border-green-100 text-center">
-          <p className="text-[10px] uppercase text-green-700 font-semibold">
-            Vendidos
-          </p>
-          <div className="flex justify-center gap-2 text-xl font-bold text-green-700">
-            <span>{stats?.vendidos || 0}</span>
-          </div>
-        </div>
-        <div className="bg-violet-50/50 p-3 rounded-lg border border-violet-100 text-center">
-          <p className="text-[10px] uppercase text-violet-700 font-semibold">
-            Condicional
-          </p>
-          <div className="flex justify-center gap-2 text-xl font-bold text-violet-700">
-            <span>{stats?.condicionais || 0}</span>
-          </div>
-        </div>
-      </div> */}
-
       <div className="flex items-center justify-between border-b pb-2">
         <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-wrap">
           Lista de Lotes |
@@ -680,8 +649,9 @@ function LotesTabContent({
               (lote) =>
                 !lote.image?.thumb?.url &&
                 !lote.bem?.image?.thumb?.url &&
-                (!lote.bem?.arquivos?.filter((a) => a.tipo.nome === "Foto Site")
-                  .length ||
+                (!lote.bem?.arquivos?.filter(
+                  (a) => a.tipo?.nome === "Foto Site",
+                ).length ||
                   !lote.bem?.arquivos?.filter((a) => a.site === true).length),
             ).length
           : lotes.length}{" "}
@@ -696,7 +666,7 @@ function LotesTabContent({
                   !lote.image?.thumb?.url &&
                   !lote.bem?.image?.thumb?.url &&
                   (!lote.bem?.arquivos?.filter(
-                    (a) => a.tipo.nome === "Foto Site",
+                    (a) => a.tipo?.nome === "Foto Site",
                   ).length ||
                     !lote.bem?.arquivos?.filter((a) => a.site === true).length),
               )
@@ -705,6 +675,10 @@ function LotesTabContent({
                   key={lote.id}
                   lote={lote}
                   formatBRL={formatBRL}
+                  onClick={(id) => {
+                    setSelectedBemId(lote.bem?.id || null);
+                    setIsDialogOpen(true);
+                  }}
                 />
               ))
           : lotes.map((lote) => (
@@ -712,9 +686,19 @@ function LotesTabContent({
                 key={lote.id}
                 lote={lote}
                 formatBRL={formatBRL}
+                onClick={(id) => {
+                  setSelectedBemId(lote.bem?.id || null);
+                  setIsDialogOpen(true);
+                }}
               />
             ))}
       </div>
+      <BemDetalhesDialog
+        id={selectedBemId}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        initialData={lotes.find((l) => l.bem?.id === selectedBemId)?.bem}
+      />
     </div>
   );
 }
@@ -723,6 +707,7 @@ import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { pegarLogoComitente } from "@/utils/leilao";
+import { BemDetalhesDialog } from "../bens/BemDetalhesDialog";
 
 const CartazLeilaoResumo = dynamic(() => import("./CartazLeilaoResumo"), {
   ssr: false,

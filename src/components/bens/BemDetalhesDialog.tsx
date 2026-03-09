@@ -58,7 +58,7 @@ export function BemDetalhesDialog({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] h-[90vh] md:w-[1000px] md:h-[800px] p-0 overflow-hidden flex flex-col border-none shadow-2xl min-w-0">
+        <DialogContent className="w-[95vw] md:w-[1000px] h-dvh p-0 overflow-hidden flex flex-col border-none shadow-2xl min-w-0">
           <BemDetalhesContent
             bem={bem}
             isLoading={isLoading}

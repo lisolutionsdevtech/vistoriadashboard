@@ -169,7 +169,13 @@ export function BemDetalhesContent({
       return [];
     });
     setPendingCapaId(null);
-    await mutate(() => true, undefined, { revalidate: true });
+
+    // Revalida sem apagar o cache para não fechar o dialog do lote (LotesTabContent)
+    await mutate(
+      () => true,
+      (currentData: any) => currentData, // Preserva o cache atual enquanto revalida
+      { revalidate: true }
+    );
     router.refresh();
   };
 
@@ -677,7 +683,7 @@ export function BemDetalhesContent({
                         className={cn(
                           "relative w-full h-full rounded-lg border-2 border-dashed border-emerald-500 overflow-hidden bg-muted transition-all hover:opacity-80 block",
                           activeImage === upload.previewUrl &&
-                            "ring-2 ring-primary ring-offset-2",
+                          "ring-2 ring-primary ring-offset-2",
                         )}
                         type="button"
                       >
@@ -779,63 +785,63 @@ export function BemDetalhesContent({
               bem.anoModelo ||
               bem.cor ||
               bem.combustivel) && (
-              <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">
-                <h4 className="font-semibold flex items-center gap-2 text-primary">
-                  <Truck className="h-4 w-4" /> Especificações
-                </h4>
+                <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">
+                  <h4 className="font-semibold flex items-center gap-2 text-primary">
+                    <Truck className="h-4 w-4" /> Especificações
+                  </h4>
 
-                <div className="grid grid-cols-2 gap-y-2 text-sm min-w-0">
-                  {bem.marcaModelo && (
-                    <div className="col-span-2 flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Marca/Modelo
-                      </span>
-                      <span className="font-medium break-words">
-                        {bem.marcaModelo}
-                      </span>
-                    </div>
-                  )}
+                  <div className="grid grid-cols-2 gap-y-2 text-sm min-w-0">
+                    {bem.marcaModelo && (
+                      <div className="col-span-2 flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Marca/Modelo
+                        </span>
+                        <span className="font-medium break-words">
+                          {bem.marcaModelo}
+                        </span>
+                      </div>
+                    )}
 
-                  {bem.anoFabricacao && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Ano Fab.
-                      </span>
-                      <span className="font-medium">{bem.anoFabricacao}</span>
-                    </div>
-                  )}
+                    {bem.anoFabricacao && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Ano Fab.
+                        </span>
+                        <span className="font-medium">{bem.anoFabricacao}</span>
+                      </div>
+                    )}
 
-                  {bem.anoModelo && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Ano Mod.
-                      </span>
-                      <span className="font-medium">{bem.anoModelo}</span>
-                    </div>
-                  )}
+                    {bem.anoModelo && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Ano Mod.
+                        </span>
+                        <span className="font-medium">{bem.anoModelo}</span>
+                      </div>
+                    )}
 
-                  {bem.cor && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">Cor</span>
-                      <span className="font-medium break-words">
-                        {typeof bem.cor === "string" ? bem.cor : bem.cor.nome}
-                      </span>
-                    </div>
-                  )}
+                    {bem.cor && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">Cor</span>
+                        <span className="font-medium break-words">
+                          {typeof bem.cor === "string" ? bem.cor : bem.cor.nome}
+                        </span>
+                      </div>
+                    )}
 
-                  {bem.combustivel && (
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        Combustível
-                      </span>
-                      <span className="font-medium break-words">
-                        {bem.combustivel}
-                      </span>
-                    </div>
-                  )}
+                    {bem.combustivel && (
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-muted-foreground">
+                          Combustível
+                        </span>
+                        <span className="font-medium break-words">
+                          {bem.combustivel}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {(bem.placa || bem.chassi || bem.renavam) && (
               <div className="space-y-3 p-4 rounded-xl border bg-card/50 min-w-0">

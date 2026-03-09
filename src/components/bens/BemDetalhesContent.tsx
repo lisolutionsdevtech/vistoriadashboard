@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Loader2, Star, Eye, EyeOff } from "lucide-react";
+import { Trash2, Loader2, Star, Eye, EyeOff, Save } from "lucide-react";
 
 // Helper para converter File para Base64 comprimido (Web/PWA)
 function fileToBase64(file: File): Promise<string> {
@@ -128,6 +128,8 @@ export function BemDetalhesContent({
   const [isSettingCapa, setIsSettingCapa] = useState<number | null>(null);
   const [isTogglingVisibility, setIsTogglingVisibility] = useState<number | null>(null);
   const [visibilityOverrides, setVisibilityOverrides] = useState<Record<number, boolean>>({});
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   // Determina se o arquivo está visível no site
@@ -191,9 +193,9 @@ export function BemDetalhesContent({
       if (successfullyUploaded > 0) {
         toast({
           title: "Sucesso!",
-          description: `${successfullyUploaded} imagem(ns) adicionada(s) ao bem.`,
+          description: `${successfullyUploaded} imagem(ns) adicionada(s).`,
         });
-        await refreshData();
+        setHasPendingChanges(true);
       } else {
         throw new Error("Nenhuma imagem pôde ser enviada.");
       }
@@ -239,13 +241,13 @@ export function BemDetalhesContent({
 
       toast({
         title: "Excluída",
-        description: "A foto foi apagada com sucesso.",
+        description: "Foto apagada com sucesso.",
       });
 
       if (activeImage === proxyImageUrl(arq.url || "")) {
         setActiveImage(null);
       }
-      await refreshData();
+      setHasPendingChanges(true);
     } catch (error) {
       console.error(error);
       toast({
@@ -268,8 +270,8 @@ export function BemDetalhesContent({
       });
       if (!response.ok) throw new Error("Falha ao definir capa");
 
-      toast({ title: "Capa Definida!", description: "Foto apontada como principal do Lote." });
-      await refreshData();
+      toast({ title: "Capa Definida!", description: "Foto apontada como principal." });
+      setHasPendingChanges(true);
     } catch (err) {
       toast({ variant: "destructive", title: "Erro", description: "Falha na comunicação de nova capa." });
     } finally {
@@ -297,12 +299,10 @@ export function BemDetalhesContent({
       });
       if (!response.ok) throw new Error("Falha ao alterar visibilidade");
 
-      toast({ title: "Sucesso", description: `Foto agora está ${newSiteValue ? "visível" : "oculta"} no site.` });
+      toast({ title: "Sucesso", description: `Foto ${newSiteValue ? "visível" : "oculta"} no site.` });
 
       // Atualiza estado local para re-render imediato
       setVisibilityOverrides(prev => ({ ...prev, [arq.id]: newSiteValue }));
-
-      await refreshData();
     } catch (err) {
       toast({ variant: "destructive", title: "Erro", description: "Falha ao mudar visibilidade." });
     } finally {
@@ -663,6 +663,36 @@ export function BemDetalhesContent({
               </div>
             )}
           </div>
+
+          {/* Botão Salvar Alterações — aparece quando há mudanças pendentes */}
+          {hasPendingChanges && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await refreshData();
+                    setHasPendingChanges(false);
+                    toast({ title: "Atualizado!", description: "Alterações sincronizadas." });
+                  } catch (err) {
+                    toast({ variant: "destructive", title: "Erro", description: "Falha ao atualizar." });
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-all font-semibold text-sm disabled:opacity-50 animate-in fade-in slide-in-from-bottom-4 duration-300"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {isSaving ? "Salvando..." : "Salvar Alterações"}
+              </button>
+            </div>
+          )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
